@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Leaflet Map for Subdense</title>
+        <!-- leaflet css -->    
+        <link 
+            rel="stylesheet" 
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        />
+
+        <style>
+            /* Remove margin */
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            #map {
+                height: 100vh;
+                width: 100%; 
+            }
+            .legend {
+                padding: 10px;
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                position: absolute;
+                bottom: 20px;
+                left: 20px;
+                z-index: 1000; /* Ensure the legend is on top of the map layers */
+                font-size: 12px;
+            }
+            .legend i {
+                width: 18px;
+                height: 18px;
+                float: left;
+                margin-right: 8px;
+                opacity: 0.8;
+            }
+            .legend-title {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .legend-description {
+                font-size: 10px;
+                color: #555;
+                margin-bottom: 8px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="map">
+            <div class="legend">
+                </div>
+        </div> 
+    </body>
+
+</html>
+
+<!-- leaflet js -->
+<script src ="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> <!-- load script to make leaflet functions available -->
+
+<!-- leaflet geojson vt package to read geojson files -->
+<script src="https://unpkg.com/geojson-vt@3.2.0/geojson-vt.js"></script>
+<script src="leaflet-geojson-vt.js"></script>
+
+<!-- choropleth package -->
+<script src="choropleth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.1.0/chroma.min.js"></script>
+<!-- geojson data -->
+<script src="strasbourg_formap.js"></script>
+
+<script>
+    // Map and base layer setup
+    const map = L.map('map').setView([48.5734, 7.7521], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    }).addTo(map);
+
+    // Color functions
+    function getCCIColor(d) {
+        return d > 0.90 ? '#084594' :
+               d > 0.85 ? '#4292c6' :
+               d > 0.78 ? '#9ecae1' :
+                         '#deebf7';
+    }
+
+    function getFSIColor(d) {
+        return d > 10000 ? '#252525' :
+               d > 7500  ? '#636363' :
+               d > 5000  ? '#969696' :
+               d > 2500  ? '#cccccc' :
+                          '#f7f7f7';
+    }
+
+    // Layer definitions using standard L.geoJSON
+    const CCILayer = L.geoJSON(data, {
+        style: feature => ({
+            fillColor: getCCIColor(feature.properties.cci),
+            weight: 1,
+            opacity: 1,
+            color: '#fff',
+            fillOpacity: 0.8
+        })
+    });
+
+    const FSI11Layer = L.geoJSON(data, {
+        style: feature => ({
+            fillColor: getFSIColor(feature.properties.total_area2011),
+            weight: 1,
+            opacity: 1,
+            color: '#fff',
+            fillOpacity: 0.8
+        })
+    });
+
+    const OutlineLayer = L.geoJSON(data, {
+        style: {
+            fillColor: 'none',
+            weight: 2,
+            opacity: 1,
+            color: '#000',
+            fillOpacity: 0
+        }
+    });
+
+    // Simplified legend generation
+    function generateLegend(title, description, breaks, colors) {
+        const labels = breaks.map((grade, i) => 
+            i < breaks.length - 1 ?
+            `<i style="background:${colors[i]}"></i>${grade}&ndash;${breaks[i + 1]}` :
+            `<i style="background:${colors[i]}"></i>${grade}+`
+        );
+
+        return `
+            <div class="legend-title">${title}</div>
+            <div class="legend-description">${description}</div>
+            ${labels.join('<br>')}
+        `;
+    }
+
+    // Legend content definitions
+    const legends = {
+        CCILayer: generateLegend(
+            "Regional Accessibility (CCI)",
+            "From 0 (most peripheral) to 1 (most central)",
+            [0.70, 0.78, 0.85, 0.90],
+            ['#deebf7', '#9ecae1', '#4292c6', '#084594']
+        ),
+        FSI11Layer: generateLegend(
+            "Built-up area in 2011",
+            "Amount of m2 of grid cell covered by building footprints in 2011",
+            [0, 2500, 5000, 7500, 10000],
+            ['#f7f7f7', '#cccccc', '#969696', '#636363', '#252525']
+        )
+    };
+
+    // Legend content and control
+    const legendDiv = document.querySelector('.legend');
+
+    function updateLegend() {
+        legendDiv.innerHTML = map.hasLayer(CCILayer) && map.hasLayer(FSI11Layer) ?
+            "Please select only one layer to display its legend." :
+            map.hasLayer(CCILayer) ? legends.CCILayer :
+            map.hasLayer(FSI11Layer) ? legends.FSI11Layer :
+            "";
+    }
+
+    // Event listeners and controls
+    map.on('overlayadd overlayremove', updateLegend);
+    L.control.layers(null, {
+        "FSI2011": FSI11Layer,
+        "CCI": CCILayer,
+        "Grid Outlines": OutlineLayer
+    }).addTo(map);
+
+    updateLegend();
+</script>
