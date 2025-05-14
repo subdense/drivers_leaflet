@@ -1,31 +1,41 @@
-        <div id="map" style="height: 100%; width: 100%"></div>
+    <div id="map" style="height: 100%; width: 100%"></div>
 
-        <script src="gridviz.js"></script>
-        <script>
+    <script src="gridviz.js"></script>
+    <!-- gisco backgrounds -->
+    <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@2.0.2"></script>
+    
+    <script>
+        
         //define map with initial view (gridviz expects crs 3035!)
         const map = new gridviz.Map(document.getElementById('map'), 
             { x: 4147450, y: 2833126, z: 30 }
             )
-            // Define dataset from CSV
-            const dataset = new gridviz.CSVGrid(
-                map,
-                'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg_vol.csv',
-                100  // grid resolution
-            )
 
-            // Color function
-            const colorFunction = (cell) => {
-                if (cell.total_volume_new > 5000) return '#252525'
-                else if (cell.total_volume_new > 1000) return '#636363'
-                else if (cell.total_volume_new > 500) return '#969696'
-                else if (cell.total_volume_new > 100) return '#cccccc'
-                else return 'transparent'
-            }
+        // Define background layer
+        const backgroundLayer = new gridviz.BackgroundLayer(
+            gridviz_eurostat.giscoBackgroundLayer('OSMPositronBackground', 18, 'EPSG3035'),
+        )
 
-            // Define style
-            const style = new gridviz.ShapeColorSizeStyle({ color: colorFunction})
+        // Define dataset from CSV
+        const dataset = new gridviz.CSVGrid(
+            map,
+            'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
+            100  // grid resolution
+        )
 
-            // Add layer and legend to map
-            map.layers = [new gridviz.GridLayer(dataset, [style])]
+        // Color function
+        const colorFunction = (cell) => {
+            if (cell.total_volume_new > 5000) return '#252525'
+            else if (cell.total_volume_new > 1000) return '#636363'
+            else if (cell.total_volume_new > 500) return '#969696'
+            else if (cell.total_volume_new > 100) return '#cccccc'
+            else return 'transparent'
+        }
 
-        </script>
+        // Define style
+        const style = new gridviz.ShapeColorSizeStyle({ color: colorFunction})
+
+        // Add layer and legend to map
+        map.layers = [backgroundLayer, new gridviz.GridLayer(dataset, [style])]
+        map.redraw()
+    </script>
