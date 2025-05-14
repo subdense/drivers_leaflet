@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Leaflet Map for Subdense</title>
+        <!-- leaflet css -->    
+        <link 
+            rel="stylesheet" 
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        />
+        
+        <style>
+            /* Remove margin */
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            #map {
+                height: 100vh;
+                width: 100%; 
+            }
+            .legend {
+                padding: 10px;
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                z-index: 1000; /* Ensure the legend is on top of the map layers */
+                font-size: 12px;
+            }
+            .legend i {
+                width: 18px;
+                height: 18px;
+                float: left;
+                margin-right: 8px;
+                opacity: 0.8;
+            }
+            .legend-title {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .legend-description {
+                font-size: 12px;
+                color: #555;
+                margin-bottom: 8px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="map">
+            <div class="legend"></div>
+        </div> 
+        
+        <!-- Load scripts in correct order -->
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz@2.1.17"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
+        
+        <script>
+            // Wait for DOM and scripts to load
+            document.addEventListener('DOMContentLoaded', function() {
+                // Map and base layer setup
+                const map = L.map('map').setView([48.5787, 7.6248], 12);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                }).addTo(map);
+
+                // Color function
+                function getDensColor(d) {
+                    return d > 5000 ? '#252525' :
+                           d > 1000 ? '#636363' :
+                           d > 500  ? '#969696' :
+                           d > 100  ? '#cccccc' :
+                                     'transparent';
+                }
+
+                // GridViz layer setup
+                const gridvizLayer = new gridviz.GridLayer({
+                    url: 'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg_vol.csv',
+                    valueCol: 'total_volume_new',
+                    cellSize: 100,
+                    resolution: 0,
+                    type: 'float',
+                    colorFun: getDensColor,
+                    opacity: 0.8
+                }).addTo(map);
+
+                // Legend
+                const legendContent = `
+                    <div class="legend-title">Residential Densification</div>
+                    <div class="legend-description">Residential building volume in m<sup>3</sup> constructed<br>between 2011 and 2021</div>
+                    <i style="background:transparent"></i>0–100<br>
+                    <i style="background:#cccccc"></i>100–500<br>
+                    <i style="background:#969696"></i>500–1000<br>
+                    <i style="background:#636363"></i>1000–5000<br>
+                    <i style="background:#252525"></i>5000+
+                `;
+
+                document.querySelector('.legend').innerHTML = legendContent;
+            });
+        </script>
+    </body>
+</html>
