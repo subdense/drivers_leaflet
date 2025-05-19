@@ -1,59 +1,42 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Leaflet Gridviz Demo</title>
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 100vh; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>gridviz-leaflet basic example</title>
 
-  <script src="https://unpkg.com/leaflet"></script>
-  <script src="https://www.unpkg.com/leaflet-gridviz"></script>
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+            integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+            crossorigin=""
+        />
 
-  <script>
-    const crs = L.CRS.EPSG3857; // Adjust if needed
-
-    const map = new L.Map('map', {
-      crs: crs,
-      center: [50.00754, 19.98211],
-      zoom: 5,
-    });
-
-    let gridvizLayer = new L.gridviz.GridvizLayer({
-      proj: 'EPSG:3035',
-      onLayerDidMountCallback: (gridvizMap) => {
-        const dataset = new L.gridviz.MultiResolutionDataset(
-          [1000, 2000, 5000, 10000, 20000, 50000, 100000],
-          (resolution) =>
-            new L.gridviz.TiledGrid(
-              gridvizMap,
-              'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/'
-            )
-        );
-
-        const colorFunction = (cell, resolution) => {
-          const density = (1000000 * cell.TOT_P_2021) / (resolution * resolution);
-          if (density > 1500) return '#993404';
-          else if (density > 600) return '#d95f0e';
-          else if (density > 200) return '#fe9929';
-          else if (density > 60) return '#fec44f';
-          else if (density > 15) return '#fee391';
-          else return '#ffffd4';
-        };
-
-        const style = new L.gridviz.ShapeColorSizeStyle({ color: colorFunction });
-
-        gridvizMap.layers = [new L.gridviz.GridLayer(dataset, [style], { minPixelsPerCell: 5 })];
-
-        gridvizLayer._canvas.style.opacity = 0.7;
-      },
-    });
-
-    gridvizLayer.addTo(map);
-  </script>
-</body>
-</html>
+        <style>
+            #map {
+                height: 98vh;
+                width: 100%;
+            }
+            #gridviz-tooltip {
+                z-index: 99999999999999;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+        <script src="https://unpkg.com/gridviz/dist/gridviz.min.js"></script>
+        <script src="https://unpkg.com/leaflet-gridviz/dist/leaflet-gridviz.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+        
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"
+            integrity="sha512-lO8f7sIViqr9x5VE6Q72PS6f4FoZcuh5W9YzeSyfNRJ9z/qL3bkweiwG6keGzWS0BQzNDqAWXdBhYzFD6KffIw=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"
+            integrity="sha512-GsAYl1wxzWW6azVpX
