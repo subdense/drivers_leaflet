@@ -9,3 +9,4 @@ To do:
 - [ ] Add case outline
 - [ ] Experiment with split view. other cases in same csv or separate datasets?
 - [ ] Add prediction layer for densification probability (together with actual densification?)
+- [ ] when browser window is half size, can I recenter the map?
