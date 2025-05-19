@@ -208,72 +208,94 @@
 
         // Load CSV data and create gridviz layers
         let gridLayers = {};
-        let dataset;
 
-        // Wait for gridvizLayer to mount and dataset to load
-        const gridvizLayer = new L.GridvizLayer({
+        // Define your DensLayer first
+        gridLayers.DensLayer = new L.GridvizLayer({
             proj: 'EPSG:3035',
             onLayerDidMountCallback: (gridvizMap) => {
-                dataset = new gridviz.CSVGrid(
+                const dataset = new gridviz.CSVGrid(
                     gridvizMap,
                     'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
                     100
                 );
 
-                // Create a GridLayer for each thematic layer
-                for (const key of Object.keys(colorFunctions)) {
+                const colorStyle = new gridviz.ShapeColorSizeStyle({ 
+                    color: colorFunctions.DensLayer
+                });
+                const strokeStyle = new gridviz.StrokeStyle({
+                    strokeColor: () => '#000000',
+                    strokeWidth: () => 5 
+                });
+
+                gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { 
+                    minPixelsPerCell: 5
+                })];
+                gridvizMap._canvas.style.opacity = 0.7;
+            }
+        });
+
+        // Add DensLayer to map immediately
+        gridLayers.DensLayer.addTo(leafletMap);
+        legendDiv.innerHTML = legends.DensLayer;
+
+        // Define other layers
+        const layerDefinitions = {
+            CCILayer: "Regional Accessibility (CCI)",
+            FSI11Layer: "Built-up Area 2011",
+            ParkLayer: "Distance to Parks",
+            TrainLayer: "Distance to Train Stations",
+            AmenityLayer: "Amenity Count"
+        };
+
+        Object.entries(layerDefinitions).forEach(([key, title]) => {
+            gridLayers[key] = new L.GridvizLayer({
+                proj: 'EPSG:3035',
+                onLayerDidMountCallback: (gridvizMap) => {
+                    const dataset = new gridviz.CSVGrid(
+                        gridvizMap,
+                        'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
+                        100
+                    );
+
                     const colorStyle = new gridviz.ShapeColorSizeStyle({ 
                         color: colorFunctions[key]
                     });
                     const strokeStyle = new gridviz.StrokeStyle({
-                        strokeColor: () => '#000000',  // Function returning black color
-                        strokeWidth: () => 5         // Stroke width in map units
+                        strokeColor: () => '#000000',
+                        strokeWidth: () => 5
                     });
-                    gridLayers[key] = new L.GridvizLayer({
-                        proj: 'EPSG:3035',
-                        onLayerDidMountCallback: (map) => {
-                            map.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { 
-                                minPixelsPerCell: 5
-                            })];
-                            map._canvas.style.opacity = 0.7;
-                        }
-                    });
+
+                    gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { 
+                        minPixelsPerCell: 5
+                    })];
+                    gridvizMap._canvas.style.opacity = 0.7;
                 }
-
-                // Add initial layer and legend
-                gridLayers.DensLayer.addTo(leafletMap);
-                legendDiv.innerHTML = legends.DensLayer;
-
-                // Layer control setup
-                const baseLayers = {
-                    "Residential Densification": gridLayers.DensLayer,
-                    "Built-up Area 2011": gridLayers.FSI11Layer,
-                    "Regional Accessibility (CCI)": gridLayers.CCILayer,
-                    "Distance to Parks": gridLayers.ParkLayer,
-                    "Distance to Train Stations": gridLayers.TrainLayer,
-                    "Amenity Count": gridLayers.AmenityLayer
-                };
-            
-                // Create layer control with radio buttons
-                const layerControl = L.control.layers(
-                    baseLayers, 
-                    null, 
-                    { 
-                            collapsed: false 
-                    }
-                ).addTo(leafletMap);
-
-                leafletMap.on('baselayerchange', function(e) {
-                    // Find the key for the selected layer
-                    let foundKey = Object.keys(gridLayers).find(key => gridLayers[key] === e.layer);
-                    if (foundKey) {
-                        legendDiv.innerHTML = legends[foundKey];
-                    }
-                });
-            }
+            });
         });
 
-        // This is just to mount the gridvizLayer and trigger the callback above
-        gridvizLayer.addTo(leafletMap);
+        // Layer control setup
+        const baseLayers = {
+            "Residential Densification": gridLayers.DensLayer,
+            "Built-up Area 2011": gridLayers.FSI11Layer,
+            "Regional Accessibility (CCI)": gridLayers.CCILayer,
+            "Distance to Parks": gridLayers.ParkLayer,
+            "Distance to Train Stations": gridLayers.TrainLayer,
+            "Amenity Count": gridLayers.AmenityLayer
+        };
+
+        // Create layer control
+        const layerControl = L.control.layers(
+            baseLayers, 
+            null, 
+            { collapsed: false }
+        ).addTo(leafletMap);
+
+        // Update legend on layer change
+        leafletMap.on('baselayerchange', function(e) {
+            let foundKey = Object.keys(gridLayers).find(key => gridLayers[key] === e.layer);
+            if (foundKey) {
+                legendDiv.innerHTML = legends[foundKey];
+            }
+        });
         
 </script>
