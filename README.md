@@ -4,9 +4,8 @@ This is a working example using only the Strasbourg case. Originally I used stra
 
 To do:
 
-- [ ] Remove scroll bar 
-- [ ] Add grid outline
 - [ ] Add sources
-- [ ] Show densification as default layer
+- [ ] Solve white phase between layer changes?
 - [ ] Add case outline
-- [ ] Experiment with split view
+- [ ] Experiment with split view. other cases in same csv or separate datasets?
+- [ ] Add prediction layer for densification probability (together with actual densification?)
