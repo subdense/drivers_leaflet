@@ -18,6 +18,7 @@
             body {
                 margin: 0;
                 padding: 0;
+                overflow: hidden; /* Prevent potential scrollbars */
             }
             #map {
                 height: 100vh;
@@ -71,34 +72,24 @@
             }
         </style>
     </head>
+
     <body>
         <div id="map">
             <div class="legend">
                 </div>
         </div> 
     </body>
+
 </html>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+
 <script src="https://unpkg.com/gridviz/dist/gridviz.min.js"></script>
 <script src="https://unpkg.com/leaflet-gridviz/dist/leaflet-gridviz.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
         
-<script
-    src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"
-    integrity="sha512-lO8f7sIViqr9x5VE6Q72PS6f4FoZcuh5W9YzeSyfNRJ9z/qL3bkweiwG6keGzWS0BQzNDqAWXdBhYzFD6KffIw=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-></script>
-<script
-    src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"
-    integrity="sha512-GsAYl1wxzWW6azVpXkhyYfjMb2LbaOnlrqWMBdAk9xDcilinFvGMN+48Ajp/10u/9lcnh8YyS2CYNgung7ewHg=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-></script>
-
 <script>
         // Map setup
         const leafletMap = L.map('map').setView([48.5787, 7.6248], 12);
@@ -231,11 +222,19 @@
 
                 // Create a GridLayer for each thematic layer
                 for (const key of Object.keys(colorFunctions)) {
-                    const style = new gridviz.ShapeColorSizeStyle({ color: colorFunctions[key] });
+                    const colorStyle = new gridviz.ShapeColorSizeStyle({ 
+                        color: colorFunctions[key]
+                    });
+                    const strokeStyle = new gridviz.StrokeStyle({
+                        strokeColor: () => '#000000',  // Function returning black color
+                        strokeWidth: () => 5         // Function returning width of 0.1
+                    });
                     gridLayers[key] = new L.GridvizLayer({
                         proj: 'EPSG:3035',
                         onLayerDidMountCallback: (map) => {
-                            map.layers = [new gridviz.GridLayer(dataset, [style], { minPixelsPerCell: 5 })];
+                            map.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { 
+                                minPixelsPerCell: 5
+                            })];
                             map._canvas.style.opacity = 0.7;
                         }
                     });
@@ -254,8 +253,15 @@
                     "Distance to Train Stations": gridLayers.TrainLayer,
                     "Amenity Count": gridLayers.AmenityLayer
                 };
-
-                const layerControl = L.control.layers(baseLayers, null, { collapsed: false }).addTo(leafletMap);
+            
+                // Create layer control with radio buttons
+                const layerControl = L.control.layers(
+                    baseLayers, 
+                    null, 
+                    { 
+                            collapsed: false 
+                    }
+                ).addTo(leafletMap);
 
                 leafletMap.on('baselayerchange', function(e) {
                     // Find the key for the selected layer
