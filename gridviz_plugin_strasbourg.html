@@ -14,128 +14,233 @@
         />
 
         <style>
-            body {
-                margin: 0;
-                padding: 0;
-                overflow: hidden;
-            }
-            #split-container {
-                display: flex;
-                height: 100vh;
-                width: 100vw;
-            }
-            #mapA, #mapB, #map1 {
-                flex: 1;
-                height: 100vh;
-                position: relative;
-            }
-            .map-title {
-                position: absolute;
-                top: 20px;
-                left: 20px;
-                background: rgba(255,255,255,0.85);
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-size: 18px;
-                font-weight: bold;
-                z-index: 1100;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.15);
-            }
-            #legend1 {
-                padding: 10px;
-                background-color: white;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                position: absolute;
-                bottom: 20px;
-                right: 20px;
-                z-index: 1000;
-                font-size: 12px;
-            }
-            /* Move zoom controls to lower left */
-            .leaflet-control-zoom {
-                position: absolute !important;
-                left: 20px !important;
-                bottom: 20px !important;
-                top: auto !important;
-                right: auto !important;
-                z-index: 1200;
-            }
-            /* Hide attribution on left and center maps */
-            #mapA .leaflet-control-attribution,
-            #mapB .leaflet-control-attribution {
-                display: none !important;
-            }
-            .legend i {
-                width: 18px;
-                height: 18px;
-                float: left;
-                margin-right: 8px;
-                opacity: 0.8;
-            }
-            .legend-title {
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-            .legend-description {
-                font-size: 12px;
-                color: #555;
-                margin-bottom: 8px;
-            }
-            /* Make layer control always visible */
-            .leaflet-control-layers {
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                padding: 6px 8px;
-                background: white;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-                border-radius: 5px;
-                min-width: 200px;  /* Add this line to make the box wider */
-            }
-            
-            .leaflet-control-layers-toggle {
-                display: none;  /* Hide the toggle button */
-            }
-            
-            .leaflet-control-layers-list {
-                display: block !important;  /* Always show the list */
-            }
+            body { margin: 0; padding: 0; overflow: hidden; }
+            #split-container { display: flex; height: 100vh; width: 100vw; }
+            #mapA, #mapB, #map1 { flex: 1; height: 100vh; position: relative; }
+            .map-title { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.85); padding: 8px 16px; border-radius: 6px; font-size: 18px; font-weight: bold; z-index: 1100; box-shadow: 0 1px 5px rgba(0,0,0,0.15); }
+            #legend1 { padding: 10px; background: white; border: 1px solid #ccc; border-radius: 5px; position: absolute; bottom: 20px; right: 20px; z-index: 1000; font-size: 12px; }
+            .leaflet-control-zoom { position: absolute !important; left: 20px !important; bottom: 20px !important; z-index: 1200; }
+            #mapA .leaflet-control-attribution, #mapB .leaflet-control-attribution { display: none !important; }
+            .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8; }
+            .leaflet-control-layers { position: absolute; top: 20px; right: 20px; padding: 6px 8px; background: white; box-shadow: 0 1px 5px rgba(0,0,0,0.4); border-radius: 5px; min-width: 200px; }
+            .leaflet-control-layers-toggle { display: none; }
+            .leaflet-control-layers-list { display: block !important; }
         </style>
     </head>
 
     <body>
         <div id="split-container">
             <div id="mapA">
-                <div class="map-title" id="titleA">Left Map</div>
+                <div class="map-title" id="titleA">Dortmund</div>
                 <!-- Left map, no controls/legend -->
             </div>
             <div id="mapB">
-                <div class="map-title" id="titleB">Center Map</div>
+                <div class="map-title" id="titleB">Liverpool</div>
                 <!-- Center map, no controls/legend -->
             </div>
             <div id="map1">
-                <div class="map-title" id="title1">Right Map</div>
+                <div class="map-title" id="title1">Strasbourg</div>
                 <div class="legend" id="legend1"></div>
             </div>
         </div> 
     </body>
 
-</html>
+    </html>
 
-<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <!-- External libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/gridviz/dist/gridviz.min.js"></script>
+    <script src="https://unpkg.com/leaflet-gridviz/dist/leaflet-gridviz.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
 
-<script src="https://unpkg.com/gridviz/dist/gridviz.min.js"></script>
-<script src="https://unpkg.com/leaflet-gridviz/dist/leaflet-gridviz.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
-        
-<script>
+    <script>
+        // Helper to initialize a Leaflet map and add a basemap
+        function initMap(id, view, attribution, controls = true) {
+            const map = L.map(id, { zoomControl: controls, attributionControl: controls }).setView(view, 12);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution }).addTo(map);
+            return map;
+        }
+
+        // Initialize maps
+        const leafletMapA = initMap('mapA', [51.51365816414307, 7.465434422067683], '', false); // Dortmund
+        const leafletMapB = initMap('mapB', [53.40858044175697, -2.9904078251477286], '', false); // Liverpool
+        const leafletMap1 = initMap('map1', [48.5787, 7.6248], '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', true); // Strasbourg
+
+        // Legend container for right map
+        const legendDiv1 = document.getElementById('legend1');
+        legendDiv1.className = 'legend';
+
+        // Legend generation
+        function generateLegend(title, description, breaks, colors) {
+            const labels = breaks.map((grade, i) =>
+                i < breaks.length - 1 ?
+                `<i style="background:${colors[i]};width:18px;height:18px;display:inline-block;margin-right:8px;"></i>${grade}&ndash;${breaks[i + 1]}` :
+                `<i style="background:${colors[i]};width:18px;height:18px;display:inline-block;margin-right:8px;"></i>${grade}+`
+            );
+            return `
+                <div class="legend-title" style="font-weight:bold;margin-bottom:5px;">${title}</div>
+                <div class="legend-description" style="font-size:12px;color:#555;margin-bottom:8px;">${description}</div>
+                ${labels.join('<br>')}
+            `;
+        }
+
+        // Color functions for each layer
+        const colorFunctions = {
+            DensLayer: cell => {
+                const v = cell.total_volume_new;
+                if (v > 5000) return '#252525';
+                else if (v > 1000) return '#636363';
+                else if (v > 500) return '#969696';
+                else if (v > 100) return '#cccccc';
+                else return 'transparent';
+            },
+            CCILayer: cell => {
+                const v = cell.cci;
+                if (v > 0.8) return '#006d2c';
+                else if (v > 0.6) return '#2ca25f';
+                else if (v > 0.4) return '#66c2a4';
+                else if (v > 0.2) return '#b2e2e2';
+                else return '#edf8fb';
+            },
+            FSI11Layer: cell => {
+                const v = cell.total_area2011;
+                if (v > 8000) return '#252525';
+                else if (v > 6000) return '#636363';
+                else if (v > 4000) return '#969696';
+                else if (v > 2000) return '#cccccc';
+                else return '#f7f7f7';
+            },
+            ParkLayer: cell => {
+                const v = cell.m_to_park;
+                if (v > 2000) return '#ffffff';
+                else if (v > 1000) return '#99d594';
+                else if (v > 500) return '#31a354';
+                else if (v > 250) return '#006d2c';
+                else return '#004417';
+            },
+            TrainLayer: cell => {
+                const v = cell.m_to_train;
+                if (v > 2000) return '#ffffff';
+                else if (v > 1000) return '#bcbddc';
+                else if (v > 500) return '#807dba';
+                else if (v > 250) return '#6a51a3';
+                else return '#4a1486';
+            },
+            AmenityLayer: cell => {
+                const v = cell.amenity_count;
+                if (v > 20) return '#b30000';
+                else if (v > 10) return '#e34a33';
+                else if (v > 5) return '#fc8d59';
+                else if (v > 0) return '#fdcc8a';
+                else return '#ffffff';
+            }
+        };
+
+        // Legends for each layer
+        const legends = {
+            DensLayer: generateLegend(
+                "Residential Densification",
+                "Residential building volume in m<sup>3</sup> constructed<br>between 2011 and 2021",
+                [0, 100, 500, 1000, 5000], 
+                ['transparent', '#cccccc', '#969696', '#636363', '#252525']
+            ),
+            CCILayer: generateLegend(
+                "Regional Accessibility (CCI)",
+                "From 0 (most peripheral) to 1 (most central)",
+                [0, 0.2, 0.4, 0.6, 0.8],
+                ['#edf8fb','#b2e2e2','#66c2a4','#2ca25f','#006d2c']
+            ),
+            FSI11Layer: generateLegend(
+                "Built-up area in 2011 (total_area2011)",
+                "Share of grid cell covered by building footprints in 2011",
+                ["0%","25%", "40%", "60%", "80%"],
+                ['#f7f7f7', '#cccccc', '#969696', '#636363', '#252525']
+            ), 
+            ParkLayer: generateLegend(
+                "Distance to Parks (m_to_park)",
+                "Distance to nearest park or green space in meters",
+                [0, 250, 500, 1000, 2000],
+                ['#004417', '#006d2c', '#31a354', '#99d594', '#ffffff']
+            ),
+            TrainLayer: generateLegend(
+                "Distance to Train Stations (m_to_train)",
+                "Distance to nearest train station in meters",
+                [0, 250, 500, 1000, 2000],
+                ['#4a1486', '#6a51a3', '#807dba', '#bcbddc', '#ffffff']
+            ),
+            AmenityLayer: generateLegend(
+                "Amenity Count (amenity_count)",
+                "Number of amenities within a 500m radius",
+                [0, 0, 5, 10, 20],
+                ['#ffffff', '#fdcc8a', '#fc8d59', '#e34a33', '#b30000']
+            )
+        };
+
+        // Helper to create a gridviz layer
+        function createGridvizLayer(key) {
+            return new L.GridvizLayer({
+                proj: 'EPSG:3035',
+                onLayerDidMountCallback: (gridvizMap) => {
+                    const dataset = new gridviz.CSVGrid(
+                        gridvizMap,
+                        'https://raw.githubusercontent.com/subdense/drivers_leaflet/refs/heads/master/drivers.csv',
+                        100
+                    );
+                    const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions[key] });
+                    const strokeStyle = new gridviz.StrokeStyle({ strokeColor: () => '#000000', strokeWidth: () => 5 });
+                    gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { minPixelsPerCell: 5 })];
+                    gridvizMap._canvas.style.opacity = 0.7;
+                }
+            });
+        }
+
+        // Create gridviz layers for each map
+        function setupGridLayers(map, legendDiv, withControls) {
+            const layerKeys = ['DensLayer', 'CCILayer', 'FSI11Layer', 'ParkLayer', 'TrainLayer', 'AmenityLayer'];
+            let gridLayers = {};
+            layerKeys.forEach(key => {
+                gridLayers[key] = createGridvizLayer(key);
+            });
+            gridLayers.DensLayer.addTo(map);
+            if (legendDiv) legendDiv.innerHTML = legends.DensLayer;
+
+            if (withControls) {
+                const baseLayers = {
+                    "Residential Densification": gridLayers.DensLayer,
+                    "Built-up Area 2011": gridLayers.FSI11Layer,
+                    "Regional Accessibility (CCI)": gridLayers.CCILayer,
+                    "Distance to Parks": gridLayers.ParkLayer,
+                    "Distance to Train Stations": gridLayers.TrainLayer,
+                    "Amenity Count": gridLayers.AmenityLayer
+                };
+                L.control.layers(baseLayers, null, { collapsed: false }).addTo(map);
+            }
+            return gridLayers;
+        }
+
+        // Setup all maps
+        const gridLayersA = setupGridLayers(leafletMapA, null, false);
+        const gridLayersB = setupGridLayers(leafletMapB, null, false);
+        const gridLayers1 = setupGridLayers(leafletMap1, legendDiv1, true);
+
+        // Synchronize layer changes: right map controls all
+        leafletMap1.on('baselayerchange', function(e) {
+            let foundKey = Object.keys(gridLayers1).find(key => gridLayers1[key] === e.layer);
+            if (foundKey) {
+                legendDiv1.innerHTML = legends[foundKey];
+                Object.values(gridLayersA).forEach(layer => leafletMapA.removeLayer(layer));
+                Object.values(gridLayersB).forEach(layer => leafletMapB.removeLayer(layer));
+                gridLayersA[foundKey].addTo(leafletMapA);
+                gridLayersB[foundKey].addTo(leafletMapB);
+            }
+        });
+    </script>
         // Three maps: left, center, right (original)
-        const leafletMapA = L.map('mapA', { zoomControl: true, attributionControl: false }).setView([48.57, 7.60], 12); // Left
-        const leafletMapB = L.map('mapB', { zoomControl: true, attributionControl: false }).setView([48.583, 7.75], 13); // Center
-        const leafletMap1 = L.map('map1', { zoomControl: true, attributionControl: true }).setView([48.5787, 7.6248], 12); // Right (original)
+        const leafletMapA = L.map('mapA', { zoomControl: true, attributionControl: false }).setView([51.51365816414307, 7.465434422067683], 12); // Left: Dortmund
+        const leafletMapB = L.map('mapB', { zoomControl: true, attributionControl: false }).setView([53.40858044175697, -2.9904078251477286], 12); // Center: Liverpool
+        const leafletMap1 = L.map('map1', { zoomControl: true, attributionControl: true }).setView([48.5787, 7.6248], 12); // Right: Strasbourg
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -267,7 +372,7 @@
                 onLayerDidMountCallback: (gridvizMap) => {
                     const dataset = new gridviz.CSVGrid(
                         gridvizMap,
-                        'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
+                        'https://raw.githubusercontent.com/subdense/drivers_leaflet/refs/heads/master/drivers.csv',
                         100
                     );
                     const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions.DensLayer });
@@ -293,7 +398,7 @@
                     onLayerDidMountCallback: (gridvizMap) => {
                         const dataset = new gridviz.CSVGrid(
                             gridvizMap,
-                            'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
+                            'https://raw.githubusercontent.com/subdense/drivers_leaflet/refs/heads/master/drivers.csv',
                             100
                         );
                         const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions[key] });
