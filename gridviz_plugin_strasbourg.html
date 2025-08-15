@@ -14,17 +14,34 @@
         />
 
         <style>
-            /* Remove margin */
             body {
                 margin: 0;
                 padding: 0;
-                overflow: hidden; /* Prevent potential scrollbars */
+                overflow: hidden;
             }
-            #map {
+            #split-container {
+                display: flex;
                 height: 100vh;
-                width: 100%; 
+                width: 100vw;
             }
-            .legend {
+            #mapA, #mapB, #map1 {
+                flex: 1;
+                height: 100vh;
+                position: relative;
+            }
+            .map-title {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                background: rgba(255,255,255,0.85);
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-size: 18px;
+                font-weight: bold;
+                z-index: 1100;
+                box-shadow: 0 1px 5px rgba(0,0,0,0.15);
+            }
+            #legend1 {
                 padding: 10px;
                 background-color: white;
                 border: 1px solid #ccc;
@@ -32,8 +49,22 @@
                 position: absolute;
                 bottom: 20px;
                 right: 20px;
-                z-index: 1000; /* Ensure the legend is on top of the map layers */
+                z-index: 1000;
                 font-size: 12px;
+            }
+            /* Move zoom controls to lower left */
+            .leaflet-control-zoom {
+                position: absolute !important;
+                left: 20px !important;
+                bottom: 20px !important;
+                top: auto !important;
+                right: auto !important;
+                z-index: 1200;
+            }
+            /* Hide attribution on left and center maps */
+            #mapA .leaflet-control-attribution,
+            #mapB .leaflet-control-attribution {
+                display: none !important;
             }
             .legend i {
                 width: 18px;
@@ -74,9 +105,19 @@
     </head>
 
     <body>
-        <div id="map">
-            <div class="legend">
-                </div>
+        <div id="split-container">
+            <div id="mapA">
+                <div class="map-title" id="titleA">Left Map</div>
+                <!-- Left map, no controls/legend -->
+            </div>
+            <div id="mapB">
+                <div class="map-title" id="titleB">Center Map</div>
+                <!-- Center map, no controls/legend -->
+            </div>
+            <div id="map1">
+                <div class="map-title" id="title1">Right Map</div>
+                <div class="legend" id="legend1"></div>
+            </div>
         </div> 
     </body>
 
@@ -91,15 +132,25 @@
 <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
         
 <script>
-        // Map setup
-        const leafletMap = L.map('map').setView([48.5787, 7.6248], 12);
+        // Three maps: left, center, right (original)
+        const leafletMapA = L.map('mapA', { zoomControl: true, attributionControl: false }).setView([48.57, 7.60], 12); // Left
+        const leafletMapB = L.map('mapB', { zoomControl: true, attributionControl: false }).setView([48.583, 7.75], 13); // Center
+        const leafletMap1 = L.map('map1', { zoomControl: true, attributionControl: true }).setView([48.5787, 7.6248], 12); // Right (original)
+
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        }).addTo(leafletMap);
+        }).addTo(leafletMapA);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '', // No attribution for center
+        }).addTo(leafletMapB);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        }).addTo(leafletMap1);
 
-        // Prepare legend container
-        const legendDiv = document.querySelector('.legend');        legendDiv.className = 'legend';
-        
+        // Prepare legend container for right map
+        const legendDiv1 = document.getElementById('legend1');
+        legendDiv1.className = 'legend';
+
         // Legend generation
         function generateLegend(title, description, breaks, colors) {
             const labels = breaks.map((grade, i) => 
@@ -206,49 +257,12 @@
             )
         };
 
-        // Load CSV data and create gridviz layers
-        let gridLayers = {};
-
-        // Define your DensLayer first
-        gridLayers.DensLayer = new L.GridvizLayer({
-            proj: 'EPSG:3035',
-            onLayerDidMountCallback: (gridvizMap) => {
-                const dataset = new gridviz.CSVGrid(
-                    gridvizMap,
-                    'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
-                    100
-                );
-
-                const colorStyle = new gridviz.ShapeColorSizeStyle({ 
-                    color: colorFunctions.DensLayer
-                });
-                const strokeStyle = new gridviz.StrokeStyle({
-                    strokeColor: () => '#000000',
-                    strokeWidth: () => 5 
-                });
-
-                gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { 
-                    minPixelsPerCell: 5
-                })];
-                gridvizMap._canvas.style.opacity = 0.7;
-            }
-        });
-
-        // Add DensLayer to map immediately
-        gridLayers.DensLayer.addTo(leafletMap);
-        legendDiv.innerHTML = legends.DensLayer;
-
-        // Define other layers
-        const layerDefinitions = {
-            CCILayer: "Regional Accessibility (CCI)",
-            FSI11Layer: "Built-up Area 2011",
-            ParkLayer: "Distance to Parks",
-            TrainLayer: "Distance to Train Stations",
-            AmenityLayer: "Amenity Count"
-        };
-
-        Object.entries(layerDefinitions).forEach(([key, title]) => {
-            gridLayers[key] = new L.GridvizLayer({
+        // Load CSV data and create gridviz layers for both maps
+        // Only create layer control and legend for the right map
+        function createGridLayers(map, legendDiv, withControls) {
+            let gridLayers = {};
+            // DensLayer
+            gridLayers.DensLayer = new L.GridvizLayer({
                 proj: 'EPSG:3035',
                 onLayerDidMountCallback: (gridvizMap) => {
                     const dataset = new gridviz.CSVGrid(
@@ -256,45 +270,75 @@
                         'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
                         100
                     );
-
-                    const colorStyle = new gridviz.ShapeColorSizeStyle({ 
-                        color: colorFunctions[key]
-                    });
-                    const strokeStyle = new gridviz.StrokeStyle({
-                        strokeColor: () => '#000000',
-                        strokeWidth: () => 5
-                    });
-
-                    gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { 
-                        minPixelsPerCell: 5
-                    })];
+                    const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions.DensLayer });
+                    const strokeStyle = new gridviz.StrokeStyle({ strokeColor: () => '#000000', strokeWidth: () => 5 });
+                    gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { minPixelsPerCell: 5 })];
                     gridvizMap._canvas.style.opacity = 0.7;
                 }
             });
-        });
+            gridLayers.DensLayer.addTo(map);
+            if (legendDiv) legendDiv.innerHTML = legends.DensLayer;
 
-        // Layer control setup
-        const baseLayers = {
-            "Residential Densification": gridLayers.DensLayer,
-            "Built-up Area 2011": gridLayers.FSI11Layer,
-            "Regional Accessibility (CCI)": gridLayers.CCILayer,
-            "Distance to Parks": gridLayers.ParkLayer,
-            "Distance to Train Stations": gridLayers.TrainLayer,
-            "Amenity Count": gridLayers.AmenityLayer
-        };
+            // Other layers
+            const layerDefinitions = {
+                CCILayer: "Regional Accessibility (CCI)",
+                FSI11Layer: "Built-up Area 2011",
+                ParkLayer: "Distance to Parks",
+                TrainLayer: "Distance to Train Stations",
+                AmenityLayer: "Amenity Count"
+            };
+            Object.entries(layerDefinitions).forEach(([key, title]) => {
+                gridLayers[key] = new L.GridvizLayer({
+                    proj: 'EPSG:3035',
+                    onLayerDidMountCallback: (gridvizMap) => {
+                        const dataset = new gridviz.CSVGrid(
+                            gridvizMap,
+                            'https://raw.githubusercontent.com/veragotze/leaflet_data/refs/heads/main/strasbourg.csv',
+                            100
+                        );
+                        const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions[key] });
+                        const strokeStyle = new gridviz.StrokeStyle({ strokeColor: () => '#000000', strokeWidth: () => 5 });
+                        gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { minPixelsPerCell: 5 })];
+                        gridvizMap._canvas.style.opacity = 0.7;
+                    }
+                });
+            });
+            // Layer control only for right map
+            let layerControl;
+            if (withControls) {
+                const baseLayers = {
+                    "Residential Densification": gridLayers.DensLayer,
+                    "Built-up Area 2011": gridLayers.FSI11Layer,
+                    "Regional Accessibility (CCI)": gridLayers.CCILayer,
+                    "Distance to Parks": gridLayers.ParkLayer,
+                    "Distance to Train Stations": gridLayers.TrainLayer,
+                    "Amenity Count": gridLayers.AmenityLayer
+                };
+                layerControl = L.control.layers(baseLayers, null, { collapsed: false }).addTo(map);
+            }
+            return gridLayers;
+        }
 
-        // Create layer control
-        const layerControl = L.control.layers(
-            baseLayers, 
-            null, 
-            { collapsed: false }
-        ).addTo(leafletMap);
+        // Create layers for all three maps
+        const gridLayersA = createGridLayers(leafletMapA, null, false);
+        const gridLayersB = createGridLayers(leafletMapB, null, false);
+        const gridLayers1 = createGridLayers(leafletMap1, legendDiv1, true);
 
-        // Update legend on layer change
-        leafletMap.on('baselayerchange', function(e) {
-            let foundKey = Object.keys(gridLayers).find(key => gridLayers[key] === e.layer);
+        // Synchronize layer changes: right map controls all
+        leafletMap1.on('baselayerchange', function(e) {
+            let foundKey = Object.keys(gridLayers1).find(key => gridLayers1[key] === e.layer);
             if (foundKey) {
-                legendDiv.innerHTML = legends[foundKey];
+                legendDiv1.innerHTML = legends[foundKey];
+                // Remove all layers from center and left maps
+                Object.values(gridLayersA).forEach(layer => {
+                    leafletMapA.removeLayer(layer);
+                });
+                Object.values(gridLayersB).forEach(layer => {
+                    leafletMapB.removeLayer(layer);
+                });
+                // Add the same layer to center and left maps
+                gridLayersA[foundKey].addTo(leafletMapA);
+                gridLayersB[foundKey].addTo(leafletMapB);
             }
         });
         
