@@ -63,10 +63,10 @@
             return map;
         }
 
-        // Initialize maps
-        const leafletMapA = initMap('mapA', [51.51365816414307, 7.465434422067683], '', false); // Dortmund
-        const leafletMapB = initMap('mapB', [53.40858044175697, -2.9904078251477286], '', false); // Liverpool
-        const leafletMap1 = initMap('map1', [48.5787, 7.6248], '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', true); // Strasbourg
+        // Initialize maps with EPSG:3035 CRS for proper alignment with CSV data
+        const leafletMapA = initMap('mapA', [51.5136, 7.4654], '', false, EPSG3035CRS); // Dortmund
+        const leafletMapB = initMap('mapB', [53.4085, -2.9904], '', false, EPSG3035CRS); // Liverpool
+        const leafletMap1 = initMap('map1', [48.5833, 7.7458], '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', true, EPSG3035CRS); // Strasbourg
 
         // Legend container for right map
         const legendDiv1 = document.getElementById('legend1');
