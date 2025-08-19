@@ -25,6 +25,9 @@
             .leaflet-control-layers { position: absolute; top: 20px; right: 20px; padding: 6px 8px; background: white; box-shadow: 0 1px 5px rgba(0,0,0,0.4); border-radius: 5px; min-width: 200px; }
             .leaflet-control-layers-toggle { display: none; }
             .leaflet-control-layers-list { display: block !important; }
+                        .leaflet-tile {
+                filter: grayscale(100%) brightness(1.1) contrast(0.9);
+            }
         </style>
     </head>
 
@@ -101,7 +104,7 @@
             
             // Apply greyscale filter to the map container
             const mapContainer = map.getContainer();
-            mapContainer.style.filter = 'grayscale(100%) brightness(1.1) contrast(0.9)';
+            //mapContainer.style.filter = 'grayscale(100%) brightness(1.1) contrast(0.9)';
             
             return map;
         }
