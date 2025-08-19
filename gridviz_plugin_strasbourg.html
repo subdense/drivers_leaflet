@@ -54,19 +54,62 @@
     <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"
+        integrity="sha512-lO8f7sIViqr9x5VE6Q72PS6f4FoZcuh5W9YzeSyfNRJ9z/qL3bkweiwG6keGzWS0BQzNDqAWXdBhYzFD6KffIw=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+    ></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"
+        integrity="sha512-GsAYl1wxzWW6azVpXkhyYfjMb2LbaOnlrqWMBdAk9xDcilinFvGMN+48Ajp/10u/9lcnh8YyS2CYNgung7ewHg=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+    ></script>
 
     <script>
-        // Helper to initialize a Leaflet map and add a basemap
-        function initMap(id, view, attribution, controls = true) {
-            const map = L.map(id, { zoomControl: controls, attributionControl: controls }).setView(view, 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution }).addTo(map);
+        // Define EPSG:3035 projection
+        const projString = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs";
+        proj4.defs('EPSG:3035', projString);
+
+        // Define CRS for EPSG:3035 (Lambert Azimuthal Equal Area)
+        const EPSG3035CRS = new L.Proj.CRS('EPSG:3035', projString, {
+            resolutions: [
+                156543.03392804097, 78271.51696402048, 39135.75848201024, 19567.87924100512, 9783.93962050256, 4891.96981025128, 2445.98490512564,
+                1222.99245256282, 611.49622628141, 305.748113140705, 152.8740565703525, 76.43702828517625, 38.21851414258813, 19.109257071294063,
+                9.554628535647032, 4.777314267823516, 2.388657133911758, 1.19432856695,
+            ],
+            bounds: L.bounds([-1031235.09091, -3364908.9791], [8000000, 11736009]),
+            origin: [0, 6000000],
+        })
+
+        // Helper to initialize a Leaflet map with proper CRS
+        function initMap(id, view, attribution, controls = true, crs = EPSG3035CRS) {
+            const map = L.map(id, { 
+                zoomControl: controls, 
+                attributionControl: controls,
+                crs: crs
+            }).setView(view, 12);
+            
+            // Use greyscale EPSG:3035 compatible basemap
+            L.tileLayer('https://gisco-services.ec.europa.eu/maps/tiles/OSMCartoV4Background/EPSG3035/{z}/{x}/{y}.png', { 
+                attribution: attribution || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://ec.europa.eu/eurostat/web/gisco">© GISCO</a>',
+                maxZoom: crs.options.resolutions.length - 1,
+                minZoom: 0,
+                noWrap: false
+            }).addTo(map);
+            
+            // Apply greyscale filter to the map container
+            const mapContainer = map.getContainer();
+            mapContainer.style.filter = 'grayscale(100%) brightness(1.1) contrast(0.9)';
+            
             return map;
         }
 
-        // Initialize maps
-        const leafletMapA = initMap('mapA', [51.51365816414307, 7.465434422067683], '', false); // Dortmund
-        const leafletMapB = initMap('mapB', [53.40858044175697, -2.9904078251477286], '', false); // Liverpool
-        const leafletMap1 = initMap('map1', [48.5787, 7.6248], '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', true); // Strasbourg
+        // Initialize maps with EPSG:3035 CRS for proper alignment with CSV data
+        const leafletMapA = initMap('mapA', [51.5136, 7.4654], '', false, EPSG3035CRS); // Dortmund
+        const leafletMapB = initMap('mapB', [53.4085, -2.9904], '', false, EPSG3035CRS); // Liverpool
+        const leafletMap1 = initMap('map1', [48.5833, 7.7458], '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>', true, EPSG3035CRS); // Strasbourg
 
         // Legend container for right map
         const legendDiv1 = document.getElementById('legend1');
@@ -190,7 +233,10 @@
                     );
                     const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions[key] });
                     const strokeStyle = new gridviz.StrokeStyle({ strokeColor: () => '#000000', strokeWidth: () => 5 });
-                    gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { minPixelsPerCell: 5 })];
+                    gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { 
+                        minPixelsPerCell: 5,
+                        cellInfoHTML: () => '' // Return empty string to disable tooltip
+                    })];
                     gridvizMap._canvas.style.opacity = 0.7;
                 }
             });
@@ -237,214 +283,3 @@
             }
         });
     </script>
-        // Three maps: left, center, right (original)
-        const leafletMapA = L.map('mapA', { zoomControl: true, attributionControl: false }).setView([51.51365816414307, 7.465434422067683], 12); // Left: Dortmund
-        const leafletMapB = L.map('mapB', { zoomControl: true, attributionControl: false }).setView([53.40858044175697, -2.9904078251477286], 12); // Center: Liverpool
-        const leafletMap1 = L.map('map1', { zoomControl: true, attributionControl: true }).setView([48.5787, 7.6248], 12); // Right: Strasbourg
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        }).addTo(leafletMapA);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '', // No attribution for center
-        }).addTo(leafletMapB);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        }).addTo(leafletMap1);
-
-        // Prepare legend container for right map
-        const legendDiv1 = document.getElementById('legend1');
-        legendDiv1.className = 'legend';
-
-        // Legend generation
-        function generateLegend(title, description, breaks, colors) {
-            const labels = breaks.map((grade, i) => 
-                i < breaks.length - 1 ?
-                `<i style="background:${colors[i]};width:18px;height:18px;display:inline-block;margin-right:8px;"></i>${grade}&ndash;${breaks[i + 1]}` :
-                `<i style="background:${colors[i]};width:18px;height:18px;display:inline-block;margin-right:8px;"></i>${grade}+`
-            );
-            return `
-                <div class="legend-title" style="font-weight:bold;margin-bottom:5px;">${title}</div>
-                <div class="legend-description" style="font-size:12px;color:#555;margin-bottom:8px;">${description}</div>
-                ${labels.join('<br>')}
-            `;
-        }
-
-        // Color functions for each layer
-        const colorFunctions = {
-            DensLayer: cell => {
-                const v = cell.total_volume_new;
-                if (v > 5000) return '#252525';
-                else if (v > 1000) return '#636363';
-                else if (v > 500) return '#969696';
-                else if (v > 100) return '#cccccc';
-                else return 'transparent';
-            },
-            CCILayer: cell => {
-                const v = cell.cci;
-                if (v > 0.8) return '#006d2c';
-                else if (v > 0.6) return '#2ca25f';
-                else if (v > 0.4) return '#66c2a4';
-                else if (v > 0.2) return '#b2e2e2';
-                else return '#edf8fb';
-            },
-            FSI11Layer: cell => {
-                const v = cell.total_area2011;
-                if (v > 8000) return '#252525';
-                else if (v > 6000) return '#636363';
-                else if (v > 4000) return '#969696';
-                else if (v > 2000) return '#cccccc';
-                else return '#f7f7f7';
-            },
-            ParkLayer: cell => {
-                const v = cell.m_to_park;
-                if (v > 2000) return '#ffffff';
-                else if (v > 1000) return '#99d594';
-                else if (v > 500) return '#31a354';
-                else if (v > 250) return '#006d2c';
-                else return '#004417';
-            },
-            TrainLayer: cell => {
-                const v = cell.m_to_train;
-                if (v > 2000) return '#ffffff';
-                else if (v > 1000) return '#bcbddc';
-                else if (v > 500) return '#807dba';
-                else if (v > 250) return '#6a51a3';
-                else return '#4a1486';
-            },
-            AmenityLayer: cell => {
-                const v = cell.amenity_count;
-                if (v > 20) return '#b30000';
-                else if (v > 10) return '#e34a33';
-                else if (v > 5) return '#fc8d59';
-                else if (v > 0) return '#fdcc8a';
-                else return '#ffffff';
-            }
-        };
-
-        // Legends for each layer
-        const legends = {
-            DensLayer: generateLegend(
-                "Residential Densification",
-                "Residential building volume in m<sup>3</sup> constructed<br>between 2011 and 2021",
-                [0, 100, 500, 1000, 5000], 
-                ['transparent', '#cccccc', '#969696', '#636363', '#252525']
-            ),
-            CCILayer: generateLegend(
-                "Regional Accessibility (CCI)",
-                "From 0 (most peripheral) to 1 (most central)",
-                [0, 0.2, 0.4, 0.6, 0.8],
-                ['#edf8fb','#b2e2e2','#66c2a4','#2ca25f','#006d2c']
-            ),
-            FSI11Layer: generateLegend(
-                "Built-up area in 2011 (total_area2011)",
-                "Share of grid cell covered by building footprints in 2011",
-                ["0%","25%", "40%", "60%", "80%"],
-                ['#f7f7f7', '#cccccc', '#969696', '#636363', '#252525']
-            ), 
-            ParkLayer: generateLegend(
-                "Distance to Parks (m_to_park)",
-                "Distance to nearest park or green space in meters",
-                [0, 250, 500, 1000, 2000],
-                ['#004417', '#006d2c', '#31a354', '#99d594', '#ffffff']
-            ),
-            TrainLayer: generateLegend(
-                "Distance to Train Stations (m_to_train)",
-                "Distance to nearest train station in meters",
-                [0, 250, 500, 1000, 2000],
-                ['#4a1486', '#6a51a3', '#807dba', '#bcbddc', '#ffffff']
-            ),
-            AmenityLayer: generateLegend(
-                "Amenity Count (amenity_count)",
-                "Number of amenities within a 500m radius",
-                [0, 0, 5, 10, 20],
-                ['#ffffff', '#fdcc8a', '#fc8d59', '#e34a33', '#b30000']
-            )
-        };
-
-        // Load CSV data and create gridviz layers for both maps
-        // Only create layer control and legend for the right map
-        function createGridLayers(map, legendDiv, withControls) {
-            let gridLayers = {};
-            // DensLayer
-            gridLayers.DensLayer = new L.GridvizLayer({
-                proj: 'EPSG:3035',
-                onLayerDidMountCallback: (gridvizMap) => {
-                    const dataset = new gridviz.CSVGrid(
-                        gridvizMap,
-                        'https://raw.githubusercontent.com/subdense/drivers_leaflet/refs/heads/master/drivers.csv',
-                        100
-                    );
-                    const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions.DensLayer });
-                    const strokeStyle = new gridviz.StrokeStyle({ strokeColor: () => '#000000', strokeWidth: () => 5 });
-                    gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { minPixelsPerCell: 5 })];
-                    gridvizMap._canvas.style.opacity = 0.7;
-                }
-            });
-            gridLayers.DensLayer.addTo(map);
-            if (legendDiv) legendDiv.innerHTML = legends.DensLayer;
-
-            // Other layers
-            const layerDefinitions = {
-                CCILayer: "Regional Accessibility (CCI)",
-                FSI11Layer: "Built-up Area 2011",
-                ParkLayer: "Distance to Parks",
-                TrainLayer: "Distance to Train Stations",
-                AmenityLayer: "Amenity Count"
-            };
-            Object.entries(layerDefinitions).forEach(([key, title]) => {
-                gridLayers[key] = new L.GridvizLayer({
-                    proj: 'EPSG:3035',
-                    onLayerDidMountCallback: (gridvizMap) => {
-                        const dataset = new gridviz.CSVGrid(
-                            gridvizMap,
-                            'https://raw.githubusercontent.com/subdense/drivers_leaflet/refs/heads/master/drivers.csv',
-                            100
-                        );
-                        const colorStyle = new gridviz.ShapeColorSizeStyle({ color: colorFunctions[key] });
-                        const strokeStyle = new gridviz.StrokeStyle({ strokeColor: () => '#000000', strokeWidth: () => 5 });
-                        gridvizMap.layers = [new gridviz.GridLayer(dataset, [colorStyle, strokeStyle], { minPixelsPerCell: 5 })];
-                        gridvizMap._canvas.style.opacity = 0.7;
-                    }
-                });
-            });
-            // Layer control only for right map
-            let layerControl;
-            if (withControls) {
-                const baseLayers = {
-                    "Residential Densification": gridLayers.DensLayer,
-                    "Built-up Area 2011": gridLayers.FSI11Layer,
-                    "Regional Accessibility (CCI)": gridLayers.CCILayer,
-                    "Distance to Parks": gridLayers.ParkLayer,
-                    "Distance to Train Stations": gridLayers.TrainLayer,
-                    "Amenity Count": gridLayers.AmenityLayer
-                };
-                layerControl = L.control.layers(baseLayers, null, { collapsed: false }).addTo(map);
-            }
-            return gridLayers;
-        }
-
-        // Create layers for all three maps
-        const gridLayersA = createGridLayers(leafletMapA, null, false);
-        const gridLayersB = createGridLayers(leafletMapB, null, false);
-        const gridLayers1 = createGridLayers(leafletMap1, legendDiv1, true);
-
-        // Synchronize layer changes: right map controls all
-        leafletMap1.on('baselayerchange', function(e) {
-            let foundKey = Object.keys(gridLayers1).find(key => gridLayers1[key] === e.layer);
-            if (foundKey) {
-                legendDiv1.innerHTML = legends[foundKey];
-                // Remove all layers from center and left maps
-                Object.values(gridLayersA).forEach(layer => {
-                    leafletMapA.removeLayer(layer);
-                });
-                Object.values(gridLayersB).forEach(layer => {
-                    leafletMapB.removeLayer(layer);
-                });
-                // Add the same layer to center and left maps
-                gridLayersA[foundKey].addTo(leafletMapA);
-                gridLayersB[foundKey].addTo(leafletMapB);
-            }
-        });
-        
-</script>
