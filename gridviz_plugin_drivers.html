@@ -1,37 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-        <title>Subdense</title>
 
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-            integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
-            crossorigin=""
-        />
-
-        <style>
-            body { margin: 0; padding: 0; overflow: hidden; }
-            #split-container { display: flex; height: 100vh; width: 100vw; }
-            #mapA, #mapB, #map1 { flex: 1; height: 100vh; position: relative; }
-            .map-title { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.85); padding: 8px 16px; border-radius: 6px; font-size: 18px; font-weight: bold; z-index: 1100; box-shadow: 0 1px 5px rgba(0,0,0,0.15); }
-            #legend1 { padding: 10px; background: white; border: 1px solid #ccc; border-radius: 5px; position: absolute; bottom: 20px; right: 20px; z-index: 1000; font-size: 12px; }
-            .leaflet-control-zoom { position: absolute !important; left: 20px !important; bottom: 20px !important; z-index: 1200; }
-            #mapA .leaflet-control-attribution, #mapB .leaflet-control-attribution { display: none !important; }
-            .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8; }
-            .leaflet-control-layers { position: absolute; top: 20px; right: 20px; padding: 6px 8px; background: white; box-shadow: 0 1px 5px rgba(0,0,0,0.4); border-radius: 5px; min-width: 200px; }
-            .leaflet-control-layers-toggle { display: none; }
-            .leaflet-control-layers-list { display: block !important; }
-                        .leaflet-tile {
-                filter: grayscale(100%) brightness(1.1) contrast(0.9);
-            }
-        </style>
-    </head>
-
-    <body>
         <div id="split-container">
             <div id="mapA">
                 <div class="map-title" id="titleA">Dortmund</div>
@@ -46,9 +13,6 @@
                 <div class="legend" id="legend1"></div>
             </div>
         </div> 
-    </body>
-
-    </html>
 
     <!-- External libraries -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
